@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS PLAYER (
 
 CREATE TABLE IF NOT EXISTS GUILD (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS PLAYER_GUILD (
@@ -141,6 +142,39 @@ INSERT OR IGNORE INTO PLAYER (id, username, class_id, race_id) VALUES
 (23, 'Talon', 11, 11),
 (24, 'Eris', 12, 12),
 (25, 'Kaida', 1, 3);
+
+-- =========================
+-- GUILD
+-- =========================
+INSERT OR IGNORE INTO GUILD (id, name, description) VALUES
+(1, 'Order of the Dawn', 'A holy knight order sworn to protect the realm from darkness.'),
+(2, 'Shadow Veil', 'A secretive guild of rogues and assassins working from the shadows.'),
+(3, 'Arcane Concord', 'A circle of mages dedicated to studying and controlling raw magic.'),
+(4, 'Iron Vanguard', 'A battle-hardened mercenary guild known for its fearless warriors.'),
+(5, 'Emerald Circle', 'A druidic guild protecting nature and ancient forest spirits.'),
+(6, 'Stormborn Clans', 'A loose alliance of shamans and elemental warriors from the north.');
+
+-- =========================
+-- PLAYER_GUILD
+-- =========================
+INSERT OR IGNORE INTO PLAYER_GUILD (player_id, guild_id, joined_date) VALUES
+(1, 1, '2025-01-15'),
+(2, 2, '2025-02-20'),
+(3, 1, '2025-03-05'),
+(4, 3, '2025-01-25'),
+(5, 2, '2025-02-10'),
+(6, 3, '2025-03-18'),
+(7, 4, '2025-01-30'),
+(8, 5, '2025-02-14'),
+(9, 6, '2025-03-12'),
+(10, 1, '2025-01-20'),
+(12, 3, '2025-03-22'),
+(14, 5, '2025-02-05'),
+(15, 6, '2025-03-01'),
+(17, 2, '2025-02-08'),
+(18, 3, '2025-03-15'),
+(21, 6, '2025-03-25'),
+(24, 3, '2025-03-05');
 
 -- =========================
 -- PLAYER_STAT
