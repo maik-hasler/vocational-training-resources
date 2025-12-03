@@ -38,6 +38,26 @@ CREATE TABLE IF NOT EXISTS PLAYER_GUILD (
     FOREIGN KEY (guild_id) REFERENCES GUILD(id)
 );
 
+CREATE TABLE IF NOT EXISTS GUILD_ROLE (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS PLAYER_GUILD_ROLE (
+    player_id INTEGER NOT NULL,
+    guild_id INTEGER NOT NULL,
+    role_id INTEGER NOT NULL,
+    PRIMARY KEY (player_id, guild_id),
+    
+    FOREIGN KEY (player_id, guild_id)
+        REFERENCES PLAYER_GUILD(player_id, guild_id)
+        ON DELETE CASCADE,
+        
+    FOREIGN KEY (role_id)
+        REFERENCES GUILD_ROLE(id)
+);
+
 CREATE TABLE IF NOT EXISTS STAT (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -52,6 +72,16 @@ CREATE TABLE IF NOT EXISTS PLAYER_STAT (
     FOREIGN KEY (player_id) REFERENCES PLAYER(id),
     FOREIGN KEY (stat_id) REFERENCES STAT(id)
 );
+
+-- =========================
+-- GUILD_ROLE
+-- =========================
+INSERT INTO GUILD_ROLE (id, name, description) VALUES
+(1, 'Guildwarden', 'Leader of the guild'),
+(2, 'Councilor', 'Second in command, sits on the ruling council'),
+(3, 'Captain', 'Senior officer overseeing members'),
+(4, 'Member', 'Standard guild member'),
+(5, 'Initiate', 'New member / recruit');
 
 -- =========================
 -- STAT
@@ -176,6 +206,39 @@ INSERT OR IGNORE INTO PLAYER_GUILD (player_id, guild_id, joined_date) VALUES
 (18, 3, '2025-03-15'),
 (21, 6, '2025-03-25'),
 (24, 3, '2025-03-05');
+
+-- =========================
+-- PLAYER_GUILD_ROLE
+-- =========================
+-- Assign Guildwarden role to the longest-standing guild member
+INSERT INTO PLAYER_GUILD_ROLE (player_id, guild_id, role_id)
+SELECT player_id, guild_id, 1 -- Guildwarden
+FROM (
+    SELECT 
+        player_id, 
+        guild_id,
+        ROW_NUMBER() OVER (PARTITION BY guild_id ORDER BY joined_date ASC) AS rn
+    FROM PLAYER_GUILD
+)
+WHERE rn = 1;
+
+-- Assign random roles to all other members
+INSERT INTO PLAYER_GUILD_ROLE (player_id, guild_id, role_id)
+SELECT pg.player_id,
+       pg.guild_id,
+       (
+           CASE ABS(RANDOM()) % 4
+               WHEN 0 THEN 2  -- Councilor
+               WHEN 1 THEN 3  -- Captain
+               WHEN 2 THEN 4  -- Member
+               WHEN 3 THEN 5  -- Initiate
+           END
+       ) AS random_role
+FROM PLAYER_GUILD pg
+LEFT JOIN PLAYER_GUILD_ROLE pgr
+       ON pgr.player_id = pg.player_id
+      AND pgr.guild_id = pg.guild_id
+WHERE pgr.player_id IS NULL;   -- exclude Guildwardens already assigned
 
 -- =========================
 -- PLAYER_STAT

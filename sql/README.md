@@ -79,6 +79,18 @@ erDiagram
         date joined_date
     }
 
+    GUILD_ROLE {
+        int id PK
+        string name
+        string description
+    }
+
+    PLAYER_GUILD_ROLE {
+        int player_id FK
+        int guild_id FK
+        int role_id FK
+    }
+
     STAT {
         int id PK
         string name
@@ -91,10 +103,15 @@ erDiagram
         int value
     }
 
-    "CLASS" ||--o{ PLAYER : "belongs to"
-    RACE ||--o{ PLAYER : "belongs to"
-    PLAYER ||--o{ PLAYER_GUILD : "member of"
+    "CLASS" ||--o{ PLAYER : "chosen class"
+    RACE ||--o{ PLAYER : "chosen race"
+
+    PLAYER ||--o{ PLAYER_GUILD : "is member"
     GUILD ||--o{ PLAYER_GUILD : "has members"
+
+    PLAYER_GUILD ||--|| PLAYER_GUILD_ROLE : "assigns role to member"
+    GUILD_ROLE ||--o{ PLAYER_GUILD_ROLE : "available roles"
+
     PLAYER ||--o{ PLAYER_STAT : "has stat"
     STAT ||--o{ PLAYER_STAT : "defines"
 ```
