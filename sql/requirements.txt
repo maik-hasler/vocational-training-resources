@@ -1,0 +1,7 @@
+jupyter
+ipython
+ipython-sql
+sqlalchemy
+sqlite-utils
+prettytable
+pandas
