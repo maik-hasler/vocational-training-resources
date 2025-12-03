@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS RACE (
 CREATE TABLE IF NOT EXISTS PLAYER (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
+    gold INTEGER NOT NULL DEFAULT 0,
     class_id INTEGER NOT NULL,
     race_id INTEGER NOT NULL,
     FOREIGN KEY (class_id) REFERENCES KLASSE(id),
@@ -116,32 +117,32 @@ INSERT OR IGNORE INTO RACE (id, name, description) VALUES
 -- =========================
 -- PLAYER
 -- =========================
-INSERT OR IGNORE INTO PLAYER (id, username, class_id, race_id) VALUES
-(1, 'Arion', 2, 5),
-(2, 'Brynn', 3, 7),
-(3, 'Kael', 1, 2),
-(4, 'Lyra', 4, 9),
-(5, 'Toren', 5, 1),
-(6, 'Selene', 6, 6),
-(7, 'Darius', 7, 3),
-(8, 'Elara', 8, 8),
-(9, 'Fenric', 9, 4),
-(10, 'Mira', 10, 10),
-(11, 'Rogan', 11, 11),
-(12, 'Vexa', 12, 12),
-(13, 'Zyric', 1, 1),
-(14, 'Lyric', 2, 2),
-(15, 'Thane', 3, 3),
-(16, 'Kiera', 4, 4),
-(17, 'Oren', 5, 5),
-(18, 'Selar', 6, 6),
-(19, 'Riven', 7, 7),
-(20, 'Alara', 8, 8),
-(21, 'Draven', 9, 9),
-(22, 'Nyssa', 10, 10),
-(23, 'Talon', 11, 11),
-(24, 'Eris', 12, 12),
-(25, 'Kaida', 1, 3);
+INSERT OR IGNORE INTO PLAYER (id, username, gold, class_id, race_id) VALUES
+(1, 'Arion', 723, 2, 5),
+(2, 'Brynn', 1023, 3, 7),
+(3, 'Kael', 154, 1, 2),
+(4, 'Lyra', 895, 4, 9),
+(5, 'Toren', 432, 5, 1),
+(6, 'Selene', 1199, 6, 6),
+(7, 'Darius', 8, 7, 3),
+(8, 'Elara', 147, 8, 8),
+(9, 'Fenric', 1001, 9, 4),
+(10, 'Mira', 678, 10, 10),
+(11, 'Rogan', 501, 11, 11),
+(12, 'Vexa', 0, 12, 12),
+(13, 'Zyric', 132, 1, 1),
+(14, 'Lyric', 1475, 2, 2),
+(15, 'Thane', 777, 3, 3),
+(16, 'Kiera', 290, 4, 4),
+(17, 'Oren', 1111, 5, 5),
+(18, 'Selar', 623, 6, 6),
+(19, 'Riven', 50, 7, 7),
+(20, 'Alara', 1469, 8, 8),
+(21, 'Draven', 404, 9, 9),
+(22, 'Nyssa', 88, 10, 10),
+(23, 'Talon', 999, 11, 11),
+(24, 'Eris', 35, 12, 12),
+(25, 'Kaida', 447, 1, 3);
 
 -- =========================
 -- GUILD

@@ -62,6 +62,7 @@ erDiagram
     PLAYER {
         int id PK
         string username
+        int gold
         int class_id FK
         int race_id FK
     }
