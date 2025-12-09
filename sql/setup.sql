@@ -1,6 +1,11 @@
 -- =========================
 -- TABLES
 -- =========================
+CREATE TABLE IF NOT EXISTS account (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at DATETIME NOT NULL,
+    last_login DATETIME NOT NULL);
+
 CREATE TABLE IF NOT EXISTS CLASS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -15,10 +20,12 @@ CREATE TABLE IF NOT EXISTS RACE (
 
 CREATE TABLE IF NOT EXISTS PLAYER (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    gold INTEGER NOT NULL DEFAULT 0,
+    account_id INTEGER NOT NULL,
     class_id INTEGER NOT NULL,
     race_id INTEGER NOT NULL,
+    username TEXT NOT NULL UNIQUE,
+    gold INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE,
     FOREIGN KEY (class_id) REFERENCES KLASSE(id),
     FOREIGN KEY (race_id) REFERENCES RACE(id)
 );
@@ -87,9 +94,107 @@ CREATE TABLE IF NOT EXISTS PLAYER_LEVEL (
 );
 
 -- =========================
+-- account
+-- =========================
+WITH RECURSIVE nums(id) AS (
+    SELECT 1
+    UNION ALL
+    SELECT id + 1 FROM nums WHERE id < 5000)
+INSERT INTO account (id, created_at, last_login)
+SELECT
+    id,
+    -- created_at: random time within last 5 years
+    datetime(
+            strftime('%s','now')       -- current unix time
+                - abs(random()) % (5 * 365 * 24 * 60 * 60), -- subtract up to 5 years in seconds
+            'unixepoch'
+    ) AS created_at,
+    -- last_login: random time within last 180 days
+    datetime(
+            strftime('%s','now')
+                - abs(random()) % (180 * 24 * 60 * 60), -- subtract up to 180 days
+            'unixepoch'
+    ) AS last_login
+FROM nums;
+
+-- =========================
+-- PLAYER
+-- =========================
+CREATE TEMP TABLE medieval_first (name TEXT);
+INSERT INTO medieval_first (name) VALUES
+('Aldric'),('Beorn'),('Cuthbert'),('Godric'),('Hereward'),('Leofric'),('Osric'),('Wynstan'),
+('Ivar'),('Torvald'),('Sigurd'),('Ragnar'),('Bjorn'),('Hakon'),('Eirik'),('Ulfr'),
+('Aedan'),('Cian'),('Fionn'),('Niall'),('Taran'),('Ronan'),('Oisin'),('Bran'),
+('Roderick'),('Baldric'),('Cedric'),('Theobald'),('Gerhardt'),('Berengar'),
+('Cassian'),('Lucian'),('Octavian'),('Hadrian'),('Marcellus'),('Dorian'),
+('Tiberius'),('Alaric'),('Wulfram'),('Siegfried');
+
+CREATE TEMP TABLE medieval_last (name TEXT);
+INSERT INTO medieval_last (name) VALUES
+('Blackwood'),('Ironshield'),('Stormcloak'),('Ravenspear'),('Oakenshield'),
+('Wolfborn'),('Stonehelm'),('Hawkridge'),('Frostward'),('Firebrand'),
+('Silverkeep'),('Darkwater'),('Drakebane'),('Stormwatch'),('Redwyne'),
+('Longspear'),('Wintermere'),('Darkwater'),('Falconcrest'),('Grimward'),
+('Shadowmoor'),('Ravencrest'),('Thornfield'),('Brightmore'),('Highridge');
+
+CREATE TEMP TABLE medieval_epithet (epithet TEXT);
+INSERT INTO medieval_epithet (epithet) VALUES
+('the Bold'),('the Cunning'),('the Elder'),('the Younger'),('the Fearless'),
+('the Black'),('the Wanderer'),('the Vigilant'),('the Ironhand'),('the Stormborn'),
+('of Stormhold'),('of Wolfswood'),('of Dragonspire'),('of Highcrest'),
+('of Winterhall'),('of the North'),('of Westvale'),('of the Lowlands'),
+('the Just'),('the Swift'),('the Pale'),('the Red'),('the White'),('the Reaver'),
+('the Dragonslayer');
+
+-- Generate all 15,000 players in one go
+-- 95% of accounts (4,750) get at least one player, 5% (250) remain empty (randomly selected)
+WITH RECURSIVE nums(id) AS (
+    SELECT 1
+    UNION ALL
+    SELECT id + 1 FROM nums WHERE id < 15000
+),
+-- Select 4,750 random accounts (95%) that will have players
+               active_accounts AS (
+                   SELECT id FROM account ORDER BY RANDOM() LIMIT 4750
+    ),
+-- Number them sequentially for the guaranteed assignment
+    numbered_accounts AS (
+SELECT id, ROW_NUMBER() OVER (ORDER BY id) as rn
+FROM active_accounts
+    )
+INSERT INTO player (id, account_id, username, gold, class_id, race_id)
+SELECT
+    nums.id AS id,
+
+    -- First 4,750 players: one guaranteed player per active account
+    -- Remaining 10,250 players: randomly assigned to active accounts
+    CASE
+        WHEN nums.id <= 4750 THEN (SELECT id FROM numbered_accounts WHERE rn = nums.id)
+        ELSE (SELECT id FROM active_accounts ORDER BY RANDOM() LIMIT 1)
+END AS account_id,
+
+    -- username generation
+    LOWER(
+        REPLACE(
+            (
+                (SELECT name FROM medieval_first ORDER BY random() LIMIT 1) || '_' ||
+                (SELECT name FROM medieval_last ORDER BY random() LIMIT 1) || '_' ||
+                (SELECT epithet FROM medieval_epithet ORDER BY random() LIMIT 1) || '_' ||
+                nums.id
+            ),
+            ' ', '_'
+        )
+    ) AS username,
+
+    (abs(random()) % 9001) + 100 AS gold,  -- 100–9100
+    (abs(random()) % 20) + 1 AS class_id,   -- 1–20
+    (abs(random()) % 18) + 1 AS race_id     -- 1–18
+FROM nums;
+
+-- =========================
 -- GUILD_ROLE
 -- =========================
-INSERT INTO GUILD_ROLE (id, name, description) VALUES
+INSERT OR IGNORE INTO GUILD_ROLE (id, name, description) VALUES
 (1, 'Guildwarden', 'Leader of the guild'),
 (2, 'Councilor', 'Second in command, sits on the ruling council'),
 (3, 'Captain', 'Senior officer overseeing members'),
@@ -158,36 +263,6 @@ INSERT OR IGNORE INTO RACE (id, name, description) VALUES
 (18, 'Plushkin', 'Cute soft-creature race with charm-based abilities.');
 
 -- =========================
--- PLAYER
--- =========================
-INSERT OR IGNORE INTO PLAYER (id, username, gold, class_id, race_id) VALUES
-(1, 'Arion', 723, 2, 5),
-(2, 'Brynn', 1023, 3, 7),
-(3, 'Kael', 154, 1, 2),
-(4, 'Lyra', 895, 4, 9),
-(5, 'Toren', 432, 5, 1),
-(6, 'Selene', 1199, 6, 6),
-(7, 'Darius', 8, 7, 3),
-(8, 'Elara', 147, 8, 8),
-(9, 'Fenric', 1001, 9, 4),
-(10, 'Mira', 678, 10, 10),
-(11, 'Rogan', 501, 11, 11),
-(12, 'Vexa', 0, 12, 12),
-(13, 'Zyric', 132, 1, 1),
-(14, 'Lyric', 1475, 2, 2),
-(15, 'Thane', 777, 3, 3),
-(16, 'Kiera', 290, 4, 4),
-(17, 'Oren', 1111, 5, 5),
-(18, 'Selar', 623, 6, 6),
-(19, 'Riven', 50, 7, 7),
-(20, 'Alara', 1469, 8, 8),
-(21, 'Draven', 404, 9, 9),
-(22, 'Nyssa', 88, 10, 10),
-(23, 'Talon', 999, 11, 11),
-(24, 'Eris', 35, 12, 12),
-(25, 'Kaida', 447, 1, 3);
-
--- =========================
 -- GUILD
 -- =========================
 INSERT OR IGNORE INTO GUILD (id, name, description) VALUES
@@ -201,24 +276,22 @@ INSERT OR IGNORE INTO GUILD (id, name, description) VALUES
 -- =========================
 -- PLAYER_GUILD
 -- =========================
-INSERT OR IGNORE INTO PLAYER_GUILD (player_id, guild_id, joined_date) VALUES
-(1, 1, '2025-01-15'),
-(2, 2, '2025-02-20'),
-(3, 1, '2025-03-05'),
-(4, 3, '2025-01-25'),
-(5, 2, '2025-02-10'),
-(6, 3, '2025-03-18'),
-(7, 4, '2025-01-30'),
-(8, 5, '2025-02-14'),
-(9, 6, '2025-03-12'),
-(10, 1, '2025-01-20'),
-(12, 3, '2025-03-22'),
-(14, 5, '2025-02-05'),
-(15, 6, '2025-03-01'),
-(17, 2, '2025-02-08'),
-(18, 3, '2025-03-15'),
-(21, 6, '2025-03-25'),
-(24, 3, '2025-03-05');
+-- Assign 70% of players to random guilds with random join dates
+INSERT INTO PLAYER_GUILD (player_id, guild_id, joined_date)
+SELECT
+    id AS player_id,
+
+    -- Random guild (1-6)
+    (abs(random()) % 6) + 1 AS guild_id,
+
+    -- Random join date within the last year
+    date(
+    strftime('%s', 'now') - abs(random()) % (365 * 24 * 60 * 60),
+    'unixepoch'
+    ) AS joined_date
+
+FROM player
+WHERE abs(random()) % 100 < 70;  -- 70% probability
 
 -- =========================
 -- PLAYER_GUILD_ROLE
@@ -256,32 +329,26 @@ WHERE pgr.player_id IS NULL;   -- exclude Guildwardens already assigned
 -- =========================
 -- PLAYER_STAT
 -- =========================
-INSERT OR IGNORE INTO PLAYER_STAT (player_id, stat_id, value) VALUES
-(1, 1, 120), (1, 2, 80), (1, 3, 25), (1, 4, 20), (1, 5, 15), (1, 6, 5), (1, 7, 10), (1, 8, 7),
-(2, 1, 100), (2, 2, 120), (2, 3, 30), (2, 4, 15), (2, 5, 20), (2, 6, 10), (2, 7, 12), (2, 8, 8),
-(3, 1, 150), (3, 2, 50), (3, 3, 35), (3, 4, 25), (3, 5, 10), (3, 6, 4), (3, 7, 8), (3, 8, 5),
-(4, 1, 110), (4, 2, 90), (4, 3, 28), (4, 4, 18), (4, 5, 17), (4, 6, 6), (4, 7, 11), (4, 8, 7),
-(5, 1, 130), (5, 2, 70), (5, 3, 32), (5, 4, 22), (5, 5, 14), (5, 6, 5), (5, 7, 9), (5, 8, 6),
-(6, 1, 105), (6, 2, 110), (6, 3, 27), (6, 4, 16), (6, 5, 19), (6, 6, 7), (6, 7, 13), (6, 8, 9),
-(7, 1, 140), (7, 2, 60), (7, 3, 34), (7, 4, 24), (7, 5, 12), (7, 6, 5), (7, 7, 10), (7, 8, 6),
-(8, 1, 115), (8, 2, 95), (8, 3, 29), (8, 4, 19), (8, 5, 18), (8, 6, 6), (8, 7, 11), (8, 8, 7),
-(9, 1, 125), (9, 2, 85), (9, 3, 31), (9, 4, 21), (9, 5, 15), (9, 6, 5), (9, 7, 10), (9, 8, 6),
-(10, 1, 110), (10, 2, 100), (10, 3, 28), (10, 4, 18), (10, 5, 17), (10, 6, 6), (10, 7, 12), (10, 8, 8),
-(11, 1, 135), (11, 2, 65), (11, 3, 33), (11, 4, 23), (11, 5, 13), (11, 6, 5), (11, 7, 9), (11, 8, 6),
-(12, 1, 120), (12, 2, 90), (12, 3, 30), (12, 4, 20), (12, 5, 15), (12, 6, 6), (12, 7, 11), (12, 8, 7),
-(13, 1, 145), (13, 2, 55), (13, 3, 36), (13, 4, 26), (13, 5, 12), (13, 6, 4), (13, 7, 8), (13, 8, 5),
-(14, 1, 110), (14, 2, 100), (14, 3, 29), (14, 4, 18), (14, 5, 16), (14, 6, 5), (14, 7, 11), (14, 8, 7),
-(15, 1, 130), (15, 2, 70), (15, 3, 32), (15, 4, 22), (15, 5, 14), (15, 6, 5), (15, 7, 10), (15, 8, 6),
-(16, 1, 115), (16, 2, 95), (16, 3, 30), (16, 4, 19), (16, 5, 17), (16, 6, 6), (16, 7, 11), (16, 8, 7),
-(17, 1, 125), (17, 2, 85), (17, 3, 31), (17, 4, 21), (17, 5, 15), (17, 6, 5), (17, 7, 10), (17, 8, 6),
-(18, 1, 105), (18, 2, 110), (18, 3, 27), (18, 4, 16), (18, 5, 19), (18, 6, 7), (18, 7, 12), (18, 8, 8),
-(19, 1, 140), (19, 2, 60), (19, 3, 34), (19, 4, 24), (19, 5, 13), (19, 6, 5), (19, 7, 9), (19, 8, 6),
-(20, 1, 115), (20, 2, 95), (20, 3, 29), (20, 4, 19), (20, 5, 18), (20, 6, 6), (20, 7, 11), (20, 8, 7),
-(21, 1, 125), (21, 2, 85), (21, 3, 31), (21, 4, 21), (21, 5, 15), (21, 6, 5), (21, 7, 10), (21, 8, 6),
-(22, 1, 110), (22, 2, 100), (22, 3, 28), (22, 4, 18), (22, 5, 17), (22, 6, 6), (22, 7, 11), (22, 8, 7),
-(23, 1, 135), (23, 2, 65), (23, 3, 33), (23, 4, 23), (23, 5, 13), (23, 6, 5), (23, 7, 9), (23, 8, 6),
-(24, 1, 120), (24, 2, 90), (24, 3, 30), (24, 4, 20), (24, 5, 15), (24, 6, 6), (24, 7, 11), (24, 8, 7),
-(25, 1, 140), (25, 2, 75), (25, 3, 35), (25, 4, 25), (25, 5, 14), (25, 6, 5), (25, 7, 10), (25, 8, 6);
+-- Generate random stats for all players (8 stats each)
+INSERT INTO PLAYER_STAT (player_id, stat_id, value)
+SELECT
+    p.id AS player_id,
+    s.id AS stat_id,
+
+    -- Generate random stat values based on stat type
+    CASE s.id
+        WHEN 1 THEN (abs(random()) % 51) + 100  -- Health: 100-150
+        WHEN 2 THEN (abs(random()) % 71) + 50   -- Mana: 50-120
+        WHEN 3 THEN (abs(random()) % 13) + 25   -- Attack: 25-37
+        WHEN 4 THEN (abs(random()) % 12) + 15   -- Defense: 15-26
+        WHEN 5 THEN (abs(random()) % 11) + 10   -- Speed: 10-20
+        WHEN 6 THEN (abs(random()) % 7) + 4     -- Critical Chance: 4-10
+        WHEN 7 THEN (abs(random()) % 6) + 8     -- Evasion: 8-13
+        WHEN 8 THEN (abs(random()) % 5) + 5     -- Luck: 5-9
+        END AS value
+
+FROM player p
+    CROSS JOIN stat s;
 
 -- =========================
 -- LEVEL

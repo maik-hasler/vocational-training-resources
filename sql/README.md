@@ -47,6 +47,14 @@ pip install -r requirements.txt
 title: MMO Database
 ---
 erDiagram
+   ACCOUNT {
+       int id PK
+       string email
+       string password_hash
+       datetime created_at
+       datetime last_login 
+    }
+    
     "CLASS" {
         int id PK
         string name
@@ -61,6 +69,7 @@ erDiagram
 
     PLAYER {
         int id PK
+        int account_id FK
         string username
         int gold
         int class_id FK
@@ -113,6 +122,8 @@ erDiagram
         int stat_id FK
         int value
     }
+
+   ACCOUNT ||--o{ PLAYER : "owns characters"
 
     "CLASS" ||--o{ PLAYER : "chosen class"
     RACE ||--o{ PLAYER : "chosen race"
