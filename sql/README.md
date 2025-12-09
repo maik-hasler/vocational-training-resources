@@ -67,6 +67,17 @@ erDiagram
         int race_id FK
     }
 
+   LEVEL {
+      int id PK
+      int experience_required
+   }
+
+   PLAYER_LEVEL {
+      int player_id PK,FK
+      int current_level FK
+      int current_experience
+   }
+
     GUILD {
         int id PK
         string name
@@ -105,6 +116,9 @@ erDiagram
 
     "CLASS" ||--o{ PLAYER : "chosen class"
     RACE ||--o{ PLAYER : "chosen race"
+
+   PLAYER ||--|| PLAYER_LEVEL : "has level"
+   LEVEL ||--o{ PLAYER_LEVEL : "defines requirements"
 
     PLAYER ||--o{ PLAYER_GUILD : "is member"
     GUILD ||--o{ PLAYER_GUILD : "has members"

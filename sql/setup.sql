@@ -73,6 +73,19 @@ CREATE TABLE IF NOT EXISTS PLAYER_STAT (
     FOREIGN KEY (stat_id) REFERENCES STAT(id)
 );
 
+CREATE TABLE IF NOT EXISTS LEVEL (
+    id INTEGER PRIMARY KEY,
+    experience_required INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS PLAYER_LEVEL (
+    player_id INTEGER PRIMARY KEY,
+    current_level INTEGER NOT NULL DEFAULT 1,
+    current_experience INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (player_id) REFERENCES PLAYER(id) ON DELETE CASCADE,
+    FOREIGN KEY (current_level) REFERENCES LEVEL(id)
+);
+
 -- =========================
 -- GUILD_ROLE
 -- =========================
@@ -269,3 +282,37 @@ INSERT OR IGNORE INTO PLAYER_STAT (player_id, stat_id, value) VALUES
 (23, 1, 135), (23, 2, 65), (23, 3, 33), (23, 4, 23), (23, 5, 13), (23, 6, 5), (23, 7, 9), (23, 8, 6),
 (24, 1, 120), (24, 2, 90), (24, 3, 30), (24, 4, 20), (24, 5, 15), (24, 6, 6), (24, 7, 11), (24, 8, 7),
 (25, 1, 140), (25, 2, 75), (25, 3, 35), (25, 4, 25), (25, 5, 14), (25, 6, 5), (25, 7, 10), (25, 8, 6);
+
+-- =========================
+-- LEVEL
+-- =========================
+INSERT OR IGNORE INTO LEVEL (id, experience_required) VALUES
+(1, 0),
+(2, 100),
+(3, 300),
+(4, 600),
+(5, 1000);
+
+-- =========================
+-- PLAYER_LEVEL
+-- =========================
+-- Assign each level to at least one player, then random levels to the rest
+INSERT OR IGNORE INTO PLAYER_LEVEL (player_id, current_level, current_experience)
+SELECT
+    id,
+    CASE
+        -- Ensure each level is used at least once (first 5 players get levels 1-5)
+        WHEN id <= 5 THEN id
+        -- Remaining players get random levels between 1 and 5
+        ELSE (ABS(RANDOM()) % 5) + 1
+        END AS level,
+    CASE
+        -- Random experience progress within current level
+        WHEN id <= 5 AND id = 1 THEN 0
+        WHEN id <= 5 AND id = 2 THEN 45
+        WHEN id <= 5 AND id = 3 THEN 150
+        WHEN id <= 5 AND id = 4 THEN 280
+        WHEN id <= 5 AND id = 5 THEN 520
+        ELSE ABS(RANDOM()) % 50
+        END AS exp
+FROM PLAYER;
